@@ -1,6 +1,16 @@
 import math
 from PyNite import FEModel3D
 
+def read_beam_file(filename:str)->str:
+    """
+    Returns a string representing the text data in the file
+    at 'filename'.
+    """
+    with open(filename) as file:
+        file_data=file.read()
+    return file_data
+
+
 def str_to_int(s: str) -> int:
     """
     Returns an integer if the string 's' represents an integer
