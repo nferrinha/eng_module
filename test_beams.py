@@ -97,3 +97,30 @@ def test_fe_model_ss_cant():
     ar1_2,ar2_2=beams.beam_reactions_ss_cant(w2,b2,a2)
     assert round(ar2_2,2)==round(r2_2,2)
     assert round(ar1_2,2)==round(r1_2,2)
+
+def test_read_beam_file():
+    beam1_data = beams.read_beam_file('test_data/beam_1.txt')
+    assert beam1_data == '4800, 200000, 437000000\n0, 3000\n-10'
+
+def test_separate_lines():
+    beam_1_result='4800, 200000, 437000000\n0, 3000\n-10'
+    lines_data=beams.separate_lines(beam_1_result)
+    assert lines_data==['4800, 200000, 437000000', '0, 3000', '-10']
+
+def test_extract_data():
+    beam_1_data=['4800, 200000, 437000000', '0,3000', '-10']
+    extracted_data=beams.extract_data(beam_1_data,0)
+    assert extracted_data==['4800', ' 200000', ' 437000000'] 
+
+def test_get_spans():
+    beam1_span=4000,2500
+    calculated_beam_span=beams.get_spans(beam1_span[0],beam1_span[1])
+    assert calculated_beam_span==(2500, 1500)
+
+def test_load_beam_model():
+    beam_2_model=beams.load_beam_model('test_data/beam_2.txt')
+    beam_2_model.analyze()
+    support_n0=beam_2_model.Nodes['N0'].RxnFY
+    support_n1=beam_2_model.Nodes['N1'].RxnFY
+    assert round(support_n0['Combo 1'],0)==0
+    assert round(support_n1['Combo 1'],0)==3420

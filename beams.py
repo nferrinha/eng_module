@@ -98,3 +98,77 @@ def fe_model_ss_cant(
     model.add_member("M0","N0","N2",'default',Iy=1.0,Iz=I,J=J,A=A)
     model.add_member_dist_load("M0","Fy",w1=w,w2=w)
     return model
+
+def read_beam_file(filename:str)->str:
+    """
+    Returns a string representing the text data in the file
+    at 'filename'.
+    """
+    with open(filename) as file:
+        file_data=file.read()
+    return file_data
+
+def separate_lines(file_data):
+   """
+   Separates lines in a string containing new line characters into a list.
+
+   Args:
+       file_data: A string containing text with new line characters.
+
+   Returns:
+       A list of strings, where each element represents a line in the original data.
+   """
+   lines = file_data.splitlines()
+   return lines
+
+def extract_data(data_list, index):
+    """
+    Extracts the data list item corresponding to the index and returns it as a separate list.
+    """
+    data_item = data_list[index]
+    data_item.split()
+    return data_item.split(",")
+
+def get_spans(beam_length:float,cant_support_loc:float):
+    """
+    This functions takes the total length of the beam and the
+    location of the cantilever support and returns the length 
+    of the backspan.
+    """
+    b=beam_length-cant_support_loc
+    a=beam_length-b
+    return a,b
+
+from PyNite import FEModel3D
+
+def build_beam(beam_data: list[str]) -> FEModel3D:
+    """
+    Returns a beam finite element model for the data in 'beam_data' which is assumed to represent
+    a simply supported beam with a cantilever at one end with a uniform distributed load applied
+    in the direction of gravity.
+    """
+    LEI = extract_data(beam_data, 0)
+    L = str_to_float(LEI[0])
+    E = str_to_float(LEI[1])
+    I = str_to_float(LEI[2])
+    supports_1_and_2 = extract_data(beam_data, 1)
+    loc_sup_1=str_to_float(supports_1_and_2[0])
+    loc_sup_2=str_to_float(supports_1_and_2[1])
+    loads=extract_data(beam_data,2)
+    udl=str_to_float(loads[0])
+    l_cant=L-loc_sup_2
+    l_backspan=L-l_cant
+    beam_data=udl,l_backspan,l_cant,E,I,1,1,1,
+    beam_model=fe_model_ss_cant(beam_data[0],beam_data[1],beam_data[2],beam_data[3],beam_data[4],beam_data[5],beam_data[6],beam_data[7])
+    return beam_model  
+
+def load_beam_model(filename:str) -> FEModel3D:
+    """
+    This function converts a beam data into a beam model.
+    It assumes model the beam is a simply supported beam
+    with a cantilever on one end and the beam is loaded with a UDL
+    """
+    beam_data=read_beam_file(filename)
+    beam_lines=separate_lines(beam_data)
+    beam_model=build_beam(beam_lines)
+    return beam_model
