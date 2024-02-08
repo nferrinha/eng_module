@@ -24,13 +24,28 @@ def factor_load(
 
 load={"D_load":100, "L_load":150, "W_load":20}
 
-def max_factored_load(loads:dict[str,float],load_combos:dict[str,dict[str,float]])->float:
+def max_factored_load(
+        loads:dict[str,float],
+        load_combos:dict[str,dict[str,float]]
+)->float:
     """
     Returns the maximum factored load for the provided 'loads' and 'loads_comb'
     """
     acc=[]
-    for load_combo in load_combos:
-        factored=factor_load(**loads)
+    for load_combo in load_combos.values():
+        factored=factor_load(**loads,**load_combo)
         acc.append(factored)
-    return acc
-    
+    return max(acc)
+
+def min_factored_load(
+        loads:dict[str,float],
+        load_combos:dict[str,dict[str,float]]
+)->float:
+    """
+    Returns the maximum factored load for the provided 'loads' and 'loads_comb'
+    """
+    acc=[]
+    for load_combo in load_combos.values():
+        factored=factor_load(**loads,**load_combo)
+        acc.append(factored)
+    return min(acc)

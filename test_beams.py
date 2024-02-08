@@ -110,7 +110,7 @@ def test_separate_lines():
 def test_extract_data():
     beam_1_data=['4800, 200000, 437000000', '0,3000', '-10']
     extracted_data=beams.extract_data(beam_1_data,0)
-    assert extracted_data==['4800', ' 200000', ' 437000000'] 
+    assert extracted_data==['4800', '200000', '437000000'] 
 
 def test_get_spans():
     beam1_span=4000,2500
