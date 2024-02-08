@@ -127,7 +127,7 @@ def extract_data(data_list, index):
     """
     data_item = data_list[index]
     data_item.split()
-    return data_item.split(",")
+    return data_item.split(", ")
 
 def get_spans(beam_length:float,cant_support_loc:float):
     """
