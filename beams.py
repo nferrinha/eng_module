@@ -1,3 +1,7 @@
+
+
+
+
 def read_beam_file(filename:str):
     """
     Returns a string representing the text data in the file
@@ -38,7 +42,8 @@ def convert_to_numeric(filename:list[list[str]])->list[list[float]]:
             numeric_data.append(a)
         converted_data.append(numeric_data)
     return converted_data
-def get_structured_data(filename:list[list[str]])->dict:
+
+def get_structured_beam_data(filename:list[list[str]])->dict:
     """
     This function returns a dictionary with the input beam data parcelled out.
     """
@@ -109,5 +114,5 @@ def load_beam_model(filename:str) -> FEModel3D:
     It assumes model the beam is a simply supported beam
     with variable number of supports and the beam is loaded with a UDL
     """
-    beam_model=build_beam(get_structured_data(separate_data(read_beam_file(filename))))
+    beam_model=build_beam(get_structured_beam_data(separate_data(read_beam_file(filename))))
     return beam_model

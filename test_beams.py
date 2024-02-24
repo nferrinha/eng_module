@@ -1,5 +1,6 @@
 import eng_module.beams as beams
 import math
+
 def test_read_beam_file():
     beam1_data = beams.read_beam_file('test_data/beam_1.txt')
     assert beam1_data == [
@@ -35,13 +36,13 @@ def test_convert_to_numeric():
  [-100.0, 500.0, 4800.0],
  [-200.0, 3600.0, 4800.0]]
     
-def test_get_structured_data():
+def test_get_structured_beam_data():
     separated_data=[['Roof beam'],
  ['4800', '19200', '1000000000'],
  ['0', '3000', '4800'],
  ['-100', '500', '4800'],
  ['-200', '3600', '4800']]
-    assert beams.get_structured_data(separated_data)=={'Name': 'Roof beam',
+    assert beams.get_structured_beam_data(separated_data)=={'Name': 'Roof beam',
  'L': 4800.0,
  'E': 19200.0,
  'Iz': 1000000000.0,
