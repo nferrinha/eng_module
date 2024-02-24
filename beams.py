@@ -1,6 +1,55 @@
-
-
-
+import math
+def get_spans(beam_length:float,cant_support_loc:float):
+    """
+    This functions takes the total length of the beam and the
+    location of the cantilever support and returns the length 
+    of the backspan.
+    """
+    b=beam_length-cant_support_loc
+    a=beam_length-b
+    return a,b
+def str_to_int(s: str) -> int:
+    """
+    Returns an integer if the string 's' represents an integer
+    """
+    return int(s)
+def str_to_float(s: str) -> float:
+    """
+    Returns an float if the string 's' represents an float
+    """
+    return float(s)
+def euler_buckling_load(
+    l: float,
+    E: float,
+    I: float,
+    k: float,
+) -> float:
+    """
+    Returns the Euler critical load for the column section described by 'l', 'E', 'I' and 'k'.
+    'l': braced length of the column
+    'E': Elastic moduls
+    'I': Second moment of area
+    'k': Effective length factor
+    """
+    P_cr=math.pi**2*E*I/(k*l)**2
+    return P_cr
+def beam_reactions_ss_cant(
+    w:float,
+    b:float,
+    a:float,
+) -> tuple[float,float]:
+    """
+    Returms the reactions "R1" and "R2" for a simply supported beam
+    with a continuous cantilever on one end. R2 is the backspan support and R1 is the hammer support.
+    """
+    length=b+a
+    centroid_of_udl=length/2
+    equiv_point_load=w*length
+    print(equiv_point_load)
+    r1=equiv_point_load*centroid_of_udl/b
+    r2=equiv_point_load-r1
+    print(r1,r2,r1+r2)
+    return -r1,-r2
 
 def read_beam_file(filename:str):
     """
