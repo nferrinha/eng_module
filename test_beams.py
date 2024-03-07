@@ -1,5 +1,7 @@
 import eng_module.beams as beams
 import math
+import csv
+
 def test_get_spans():
     beam1_span=4000,2500
     calculated_beam_span=beams.get_spans(beam1_span[0],beam1_span[1])
@@ -51,11 +53,12 @@ def test_beam_reactions_ss_cant():
     assert (round(r1_2,2),round(r2_2,2))==(-3648.0, -0.0)
 
 def test_read_beam_file():
-    beam1_data = beams.read_beam_file('test_data/beam_1.txt')
-    assert beam1_data == [
- '4800, 200000, 437000000',
- '0, 3000',
- '-10']
+    beam1_data = beams.read_beam_file('test_data/beam_1-wk4.txt')
+    assert beam1_data == [['Balcony transfer'],
+ ['4800', '24500', '1200000000', '1', '1'],
+ ['1000:P', '3800:R'],
+ ['POINT:Fy', '-10000', '4800', 'case:Live'],
+ ['DIST:Fy', '30', '30', '0', '4800', 'case:Dead']]
 
 def test_separate_data():
     beam_1_result=[
@@ -86,21 +89,34 @@ def test_convert_to_numeric():
  [-200.0, 3600.0, 4800.0]]
     
 def test_get_structured_beam_data():
-    separated_data=[['Roof beam'],
- ['4800', '19200', '1000000000'],
- ['0', '3000', '4800'],
- ['-100', '500', '4800'],
- ['-200', '3600', '4800']]
-    assert beams.get_structured_beam_data(separated_data)=={'Name': 'Roof beam',
+    separated_data=beams.read_beam_file("test_data/beam_1-wk4.txt")
+    assert beams.get_structured_beam_data(separated_data)=={'Name': 'Balcony transfer',
  'L': 4800.0,
- 'E': 19200.0,
- 'Iz': 1000000000.0,
- 'Supports': [0.0, 3000.0, 4800.0],
- 'Loads': [[-100.0, 500.0, 4800.0], [-200.0, 3600.0, 4800.0]]}
+ 'E': 24500.0,
+ 'Iz': 1200000000.0,
+ 'Iy': 1.0,
+ 'A': 1.0,
+ 'J': 1.0,
+ 'nu': 1.0,
+ 'rho': 1.0,
+ 'Supports': {1000.0: 'P', 3800.0: 'R'},
+ 'Loads': [{'Type': 'Point',
+   'Direction': 'Fy',
+   'Magnitude': -10000.0,
+   'Location': 4800.0,
+   'Case': 'Live'},
+  {'Type': 'Dist',
+   'Direction': 'Fy',
+   'Start Magnitude': 30.0,
+   'End Magnitude': 30.0,
+   'Start Location': 0.0,
+   'End Location': 4800.0,
+   'Case': 'Dead'}]}
     
 def test_get_node_locations():
-    supports=[0.0, 3000.0, 4800.0]
-    assert beams.get_node_locations(supports)=={'N0': 0.0, 'N1': 3000.0, 'N2': 4800.0}
+    beam_length = 10000.0
+    supports = [1000.0, 4000.0, 8000.0]
+    assert beams.get_node_locations(supports,beam_length)=={'N0': 0.0, 'N1': 1000.0, 'N2': 4000.0, 'N3': 8000.0, 'N4': 10000.0}
 
 def test_calc_shear_modulus():
     E1 = 200000
@@ -111,20 +127,48 @@ def test_calc_shear_modulus():
     assert math.isclose(beams.calc_shear_modulus(nu2, E2), 1518.75, rel_tol=1e-6)
 
 def test_build_beam():
-    beam_dict = {
-        "Name": "Test Beam",
-        "L": 5000,
-        "E": 200000,
-        "Iz": 400e6,
-        "Supports": [0.0, 5000.0],
-        "Loads": [[-100, 0.0, 5000.0]],
-        "Nodes": {"N0": 0.0, "N1": 5000.0}
-    }
+    beam_dict=beams.get_structured_beam_data(beams.read_beam_file("test_data/beam_1-wk4.txt"))
     beam_model = beams.build_beam(beam_dict)
     beam_model.analyze()
-    assert math.isclose(beam_model.Members['M0'].min_deflection("dy"), -10.172, rel_tol=1e-4)
+    assert math.isclose(beam_model.Members["Balcony transfer"].min_deflection("dy"), -0.5223356009070277, rel_tol=1e-6)
 
 def test_load_beam_model():
-    beam_model = beams.load_beam_model('test_data/beam_4-wk3.txt')
+    beam_model = beams.load_beam_model('test_data/beam_1-wk4.txt')
     beam_model.analyze()
-    assert math.isclose(beam_model.Members['M0'].min_deflection("dy"),  -68.12, rel_tol=1e-4)
+    assert math.isclose(beam_model.Members["Balcony transfer"].min_deflection("dy"),  -0.5223356009070277, rel_tol=1e-4)
+
+def test_parse_supports():
+    input_supports=['1000:P', '3800:R', '4800:F', '8000:R']
+    beam_supports=beams.parse_supports(input_supports)
+    assert beams.parse_supports(input_supports)=={1000: 'P', 3800: 'R', 4800: 'F', 8000: 'R'}
+
+def test_parse_loads():
+    input_loads=[
+    ['POINT:Fy', -10000.0, 4800.0, 'case:Live'],
+    ['DIST:Fy', 30.0, 30.0, 0.0, 4800.0, 'case:Dead']
+]
+    beam_loads=beams.parse_loads(input_loads)
+    assert beams.parse_loads(input_loads)==[{'Type': 'Point',
+  'Direction': 'Fy',
+  'Magnitude': -10000.0,
+  'Location': 4800.0,
+  'Case': 'Live'},
+ {'Type': 'Dist',
+  'Direction': 'Fy',
+  'Start Magnitude': 30.0,
+  'End Magnitude': 30.0,
+  'Start Location': 0.0,
+  'End Location': 4800.0,
+  'Case': 'Dead'}]
+    
+def test_parse_beam_attributes():
+    input_attributes=[20e3, 200e3, 6480e6, 390e6, 43900, 11900e3, 0.3]
+    beam_attributes=beams.parse_beam_attributes(input_attributes)
+    assert beams.parse_beam_attributes(input_attributes)=={'L': 20000.0,
+ 'E': 200000.0,
+ 'Iz': 6480000000.0,
+ 'Iy': 390000000.0,
+ 'A': 43900,
+ 'J': 11900000.0,
+ 'nu': 0.3,
+ 'rho': 1.0}
