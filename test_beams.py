@@ -6,6 +6,46 @@ def test_get_spans():
     beam1_span=4000,2500
     calculated_beam_span=beams.get_spans(beam1_span[0],beam1_span[1])
     assert calculated_beam_span==(2500, 1500)
+def test_fe_model_ss_cant():
+    w1 = 50 # kN/m (which is the same as N/mm)
+    a1 = 2350 # mm
+    b1 = 4500 # mm
+
+    w2 = 19 # lbs/inch == 228 lbs/ft
+    a2 = 96 # inch
+    b2 = 96 # inch
+
+    E=1.
+    I=1.
+    A=1.
+    J=1.
+    nu=1.
+    model1=beams.fe_model_ss_cant(w1,b1,a1,E,I,A,J,nu)
+    model1.analyze()   
+
+    r2_1=model1.Nodes['N0'].RxnFY['Combo 1']
+    r1_1=model1.Nodes['N1'].RxnFY['Combo 1']
+    ar1_1,ar2_1=beams.beam_reactions_ss_cant(w1,b1,a1)
+    assert round(ar2_1,2)==round(r2_1,2)
+    assert round(ar1_1,2)==round(r1_1,2)
+ 
+    w2 = 19 # lbs/inch == 228 lbs/ft
+    a2 = 96 # inch
+    b2 = 96 # inch
+
+    E=1.
+    I=1.
+    A=1.
+    J=1.
+    nu=1.
+    model2=beams.fe_model_ss_cant(w2,b2,a2,E,I,A,J,nu)
+    model2.analyze()   
+
+    r2_2=model2.Nodes['N0'].RxnFY['Combo 1']
+    r1_2=model2.Nodes['N1'].RxnFY['Combo 1']
+    ar1_2,ar2_2=beams.beam_reactions_ss_cant(w2,b2,a2)
+    assert round(ar2_2,2)==round(r2_2,2)
+    assert round(ar1_2,2)==round(r1_2,2)
 
 def test_str_to_int():
     string_1 = "43"
@@ -21,6 +61,14 @@ def test_str_to_float():
     assert beams.str_to_float(string_1)==43.0
     assert beams.str_to_float(string_2)==2000.0
     assert beams.str_to_float(string_3)==324.625
+def test_separate_lines():
+    beam_1_result='4800, 200000, 437000000\n0, 3000\n-10'
+    lines_data=beams.separate_lines(beam_1_result)
+    assert lines_data==['4800, 200000, 437000000', '0, 3000', '-10']
+def test_extract_data():
+    beam_1_data=['4800, 200000, 437000000', '0,3000', '-10']
+    extracted_data=beams.extract_data(beam_1_data,0)
+    assert extracted_data==['4800', '200000', '437000000']
 def test_euler_buckling_load():
     # Column 1 - Value will be in Newtons
     l1 = 5300 # mm
@@ -130,12 +178,12 @@ def test_build_beam():
     beam_dict=beams.get_structured_beam_data(beams.read_beam_file("test_data/beam_1-wk4.txt"))
     beam_model = beams.build_beam(beam_dict)
     beam_model.analyze()
-    assert math.isclose(beam_model.Members["Balcony transfer"].min_deflection("dy"), -0.5223356009070277, rel_tol=1e-6)
+    assert math.isclose(beam_model.Members["Balcony transfer"].min_deflection("dy",combo_name="Live"), -0.4308390022675728, rel_tol=1e-6)
 
 def test_load_beam_model():
     beam_model = beams.load_beam_model('test_data/beam_1-wk4.txt')
     beam_model.analyze()
-    assert math.isclose(beam_model.Members["Balcony transfer"].min_deflection("dy"),  -0.5223356009070277, rel_tol=1e-4)
+    assert math.isclose(beam_model.Members["Balcony transfer"].min_deflection("dy",combo_name="Live"),  -0.4308390022675728, rel_tol=1e-4)
 
 def test_parse_supports():
     input_supports=['1000:P', '3800:R', '4800:F', '8000:R']

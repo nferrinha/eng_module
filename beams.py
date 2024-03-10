@@ -1,6 +1,6 @@
 import math
 import csv
-
+from PyNite import FEModel3D, Visualization
 def get_spans(beam_length:float,cant_support_loc:float):
     """
     This functions takes the total length of the beam and the
@@ -10,11 +10,50 @@ def get_spans(beam_length:float,cant_support_loc:float):
     b=beam_length-cant_support_loc
     a=beam_length-b
     return a,b
+def fe_model_ss_cant(
+    w: float,
+    b: float,
+    a: float,
+    E: float=1., 
+    I: float=1., 
+    A: float=1., 
+    J: float=1., 
+    nu: float=1., 
+    rho: float=1.,
+)->FEModel3D:
+    """
+    Return a Pynite.FEModel3D model of a simply supported beam
+    with a cantilever on one end. The beam is loaded with a UDL
+
+    "w": The magnitude of the UDL
+    "b": The length of the backspan
+    "a": The length of the cantilever
+    "E": The elastic modulus
+    "I": The second moment of inertia
+    "A": The cross-sectional area
+    "J": The polar moment of inertia
+    "nu": Poisson's ratio of material
+    "rho": Density of the material
+    """
+    model=FEModel3D()
+    G=calc_shear_modulus(nu,E)
+    model.add_material('default',E,G,nu,rho)
+    model.add_node("N0",0,0,0)
+    model.add_node("N1",b,0,0)
+    model.add_node("N2",b+a,0,0)
+    model.def_support("N0",True,True,True,True,True,False)
+    model.def_support("N1",False,True,False,False,False,False)
+    model.add_member("M0","N0","N2",'default',Iy=1.0,Iz=I,J=J,A=A)
+    model.add_member_dist_load("M0","Fy",w1=w,w2=w)
+    return model
 def str_to_int(s: str) -> int:
     """
     Returns an integer if the string 's' represents an integer
     """
-    return int(s)
+    try:
+        return int(s)
+    except ValueError:
+        return s
 def str_to_float(s: str)-> float|str:
     """
     Returns the string 's' converted into a float if possible.
@@ -24,6 +63,27 @@ def str_to_float(s: str)-> float|str:
         return float(s)
     except ValueError:
         return s
+    
+def separate_lines(file_data):
+   """
+   Separates lines in a string containing new line characters into a list.
+
+   Args:
+       file_data: A string containing text with new line characters.
+
+   Returns:
+       A list of strings, where each element represents a line in the original data.
+   """
+   lines = file_data.splitlines()
+   return lines    
+
+def extract_data(data_list, index):
+    """
+    Extracts the data list item corresponding to the index and returns it as a separate list.
+    """
+    data_item = data_list[index]
+    data_item.split()
+    return data_item.split(", ")
 def euler_buckling_load(
     l: float,
     E: float,
@@ -165,14 +225,18 @@ def build_beam(beam_data: dict) -> FEModel3D:
         J=beam_data['J'],
         A=beam_data['A'],
     )
+    load_cases=[]
     for load in beam_data['Loads']:
         if load['Type'] == "Point":
             beam_model.add_member_pt_load(
                 beam_data['Name'],
                 load['Direction'],
                 load['Magnitude'],
-                load['Location']
+                load['Location'],
+                case=load["Case"],
             )
+            if load['Case'] not in load_cases:
+                load_cases.append(load['Case'])
         elif load['Type'] == "Dist":
             beam_model.add_member_dist_load(
                 beam_data['Name'],
@@ -180,9 +244,15 @@ def build_beam(beam_data: dict) -> FEModel3D:
                 load['Start Magnitude'],
                 load['End Magnitude'],
                 load['Start Location'],
-                load['End Location']
+                load['End Location'],
+                case=load['Case']
             )
-    return beam_model
+            if load['Case'] not in load_cases:
+                load_cases.append(load['Case'])
+    for load_case in load_cases:
+        beam_model.add_load_combo(load_case, {load_case: 1.0})
+    return beam_model    
+    
 def load_beam_model(filename:str) -> FEModel3D:
     """
     This function converts a beam data into a beam model.
