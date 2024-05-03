@@ -1,6 +1,8 @@
 import math
 import csv
 from PyNite import FEModel3D, Visualization
+from eng_module.utils import str_to_int,str_to_float,read_csv_file
+
 def get_spans(beam_length:float,cant_support_loc:float):
     """
     This functions takes the total length of the beam and the
@@ -127,7 +129,7 @@ def read_beam_file(filename:str)->list[list[str]]:
         csv_reader = csv.reader(csv_file)
         for line in csv_reader:
             csvfile_data.append(line)
-    return csvfile_data
+    return read_csv_file(filename)
 
 def separate_data(filename:list[str])->list[list[str]]:
     """

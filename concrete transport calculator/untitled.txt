@@ -1,0 +1,75 @@
+# ---- Dashboard Page ----
+st.title("Concrete Mixer Dashboard")
+
+mixer_type = st.selectbox("Select Mixer Type", list(mixer_capacities.keys()))
+distance = st.number_input("Distance to Casting Site (km)", value=5.08, min_value=0.01)
+speed = st.number_input("Average Speed (km/h)", value=15.0, min_value=0.01)
+batch_plant_rate = st.number_input("Batch Plant Rate (m3/hr)", value=200.0, min_value=0.01)
+theoretical_rate = st.number_input("Theoretical Concrete Rate (m3/hr)", value=200.0, min_value=0.01)
+pumping_rate = st.number_input("Concrete Pumping Rate (m3/hr)", value=20.0, min_value=0.01)
+
+# Function to calculate and display results 
+@st.cache  
+def update_dashboard():
+    mixer_results = {}
+    for name, capacity in mixer_capacities.items():
+        mixer = ConcreteMixerProject(name)
+        loading_time = mixer.calculate_loading_time(batch_plant_rate)
+        transit_time = mixer.calculate_transit_time(distance, speed)
+        pumping_time = mixer.calculate_pumping_time(pumping_rate)
+        gross_one_way_time = mixer.calculate_gross_one_way_time(loading_time, transit_time, pumping_time)
+        mixer_results[name] = mixer.calculate_total_adjusted_one_way_time(gross_one_way_time, fleet_allowance) 
+
+    # Create the bar chart
+    fig = go.Figure(data=[go.Bar(
+        name=mixer_name,
+        x=[mixer_name],
+        y=[result]) for mixer_name, result in mixer_results.items()])
+
+    st.plotly_chart(fig)
+    
+# ---- Outputs Page ----
+st.title("Detailed Mixer Calculations")
+
+mixer_type = st.selectbox("Select Mixer Type", list(mixer_capacities.keys()))
+distance = st.number_input("Distance to Casting Site (km)", value=5.08)
+speed = st.number_input("Average Speed (km/h)", value=15)
+batch_plant_rate = st.number_input("Batching Plant Rate (m3/hr)", value=200)
+theoretical_rate = st.number_input("Theoretical Concrete Rate (m3/hr)", value=200)
+maneuver_allowance = st.number_input("Maneuver Allowance (%)", value=20)
+pumping_rate = st.number_input("Concrete Pumping Rate (m3/hr)", value=20)
+fleet_allowance = st.number_input("Fleet Allowance (%)", value=25)
+
+
+
+if st.button("Show Detailed Results"):
+    mixer = ConcreteMixerProject(mixer_type)
+
+    # Calculations
+    loading_time = mixer.calculate_loading_time(batch_plant_rate)
+    adjusted_loading_time = mixer.calculate_adjusted_loading_time(loading_time, maneuver_allowance)
+    transit_time = mixer.calculate_transit_time(distance, speed)
+    pumping_time = mixer.calculate_pumping_time(pumping_rate)
+    plants_needed = mixer.calculate_batching_plants_needed(theoretical_rate, batch_plant_rate)
+    mixers_loaded_per_hour=mixer.calculate_mixers_loaded_per_hour(adjusted_loading_time)
+    hourly_rate = mixer.calculate_effective_hourly_rate(mixers_loaded_per_hour)
+    gross_one_way_time = mixer.calculate_gross_one_way_time(loading_time, transit_time, pumping_time)
+    total_adjusted_one_way_time = mixer.calculate_total_adjusted_one_way_time(gross_one_way_time, fleet_allowance)
+    adjusted_return_time = mixer.calculate_adjusted_return_time(total_adjusted_one_way_time, transit_time, fleet_allowance)
+
+    # Output Display 
+    st.subheader("Mixer Specifications")
+    st.metric("Mixer Type", mixer_type)
+    st.metric("Mixer Capacity (m3)", mixer.mixer_volume)
+
+    st.subheader("Time Components")
+    st.metric("Number of Batching Plants Required", plants_needed)
+    st.metric("Gross Loading Time (min)", loading_time)
+    st.metric("Concrete Loading Time including Truck Manouvering (min)", adjusted_loading_time)
+    st.metric("N° Mixers Required/Hour", mixers_loaded_per_hour)
+    st.metric("Effective Hourly Concrete Rate (m3/h)", hourly_rate)
+    st.metric("Transit Time (min)", transit_time)
+    st.metric("Pumping Time (min)", pumping_time)
+    st.metric("Gross One-Way Time (min)", gross_one_way_time)
+    st.metric("Total Adjusted One-Way Time (min)", total_adjusted_one_way_time)
+    st.metric("Adjusted Return Time (min)", adjusted_return_time)
