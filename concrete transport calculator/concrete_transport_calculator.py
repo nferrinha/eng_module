@@ -18,30 +18,30 @@ batch_plant_rate = 200
 theoretical_rate = 200
 maneuver_allowance = 20
 pumping_rate = 20
-fleet_allowance = 25
+fleet_allowance = 75
 num_mixers = 8  # Or the number of mixers you want to simulate
 
 def calculate_loading_time(batch_plant_rate, mixer_volume):
   if batch_plant_rate <= 0:
     raise ValueError("Batch plant rate cannot be zero or negative")
-  return mixer_volume / batch_plant_rate
+  return np.ceil(mixer_volume / (batch_plant_rate/60)).astype(int)
 
 def calculate_adjusted_loading_time(loading_time, maneuver_allowance):
   if maneuver_allowance < 0:
     raise ValueError("Maneuver allowance cannot be negative")
-  return loading_time * (1 + maneuver_allowance/100)
+  return np.ceil(loading_time * (1 + maneuver_allowance/100)).astype(int)
 
 def calculate_transit_time(distance, speed):
   if distance <= 0:
     raise ValueError("Distance cannot be zero or negative")
   if speed <= 0:
     raise ValueError("Speed cannot be zero or negative")
-  return (distance * 1000) / (speed * 60) 
+  return np.ceil((distance / speed * 60)).astype(int) 
 
 def calculate_pumping_time(pumping_rate, mixer_volume):
   if pumping_rate <= 0:
     raise ValueError("ConcretePumping rate cannot be zero or negative")
-  return mixer_volume / pumping_rate
+  return np.ceil(mixer_volume / pumping_rate*60).astype(int)
 
 def calculate_mixers_needed(theoretical_rate, effective_rate):
   if theoretical_rate <= 0:
@@ -65,9 +65,9 @@ def calculate_gross_one_way_time(loading_time, transit_time, pumping_time):
 def calculate_total_adjusted_one_way_time(gross_one_way_time, fleet_allowance):
   if fleet_allowance < 0:
     raise ValueError("Fleet allowance cannot be negative")
-  return gross_one_way_time * (1 + fleet_allowance/100)
+  return np.ceil(gross_one_way_time / (fleet_allowance/100)).astype(int)
 
 def calculate_adjusted_return_time(total_adjusted_one_way_time, transit_time, fleet_allowance):
-  return total_adjusted_one_way_time + transit_time * (1 + fleet_allowance/100)
+  return total_adjusted_one_way_time + transit_time
     
     
